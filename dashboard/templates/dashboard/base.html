@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}AI Supply Chain Intelligence{% endblock %}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+/* ── Theme Variables ── */
+body[data-theme="dark"]      { --bg:#1a1a2e;--surface:#16213e;--text:#e0e0e0;--accent:#00d4ff;--accent2:#ff6b6b;--border:#2d2d2d;--card:#0f3460;--btn-text:#000; }
+body[data-theme="light"]     { --bg:#f0f4f8;--surface:#ffffff;--text:#1a2332;--accent:#0d6efd;--accent2:#dc3545;--border:#dee2e6;--card:#ffffff;--btn-text:#fff; }
+body[data-theme="ai"]        { --bg:#0a0a1a;--surface:#111133;--text:#00ffcc;--accent:#00ffcc;--accent2:#ff00aa;--border:#1a1a44;--card:#0d0d2b;--btn-text:#000; }
+body[data-theme="corporate"] { --bg:#f0f4f8;--surface:#ffffff;--text:#1a2332;--accent:#003087;--accent2:#c8102e;--border:#ccd6e0;--card:#ffffff;--btn-text:#fff; }
+/* Neo Enterprise Glass */
+body[data-theme="neo_glass"] { --bg:#0d1117;--surface:#161b22;--text:#e6edf3;--accent:#58a6ff;--accent2:#3fb950;--border:#21262d;--card:#0d1117;--btn-text:#000; }
+body[data-theme="neo_glass"] .card { background:rgba(22,27,34,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(88,166,255,0.15);box-shadow:0 4px 24px rgba(0,0,0,0.4); }
+body[data-theme="neo_glass"] .navbar { background:rgba(13,17,23,0.9)!important;backdrop-filter:blur(16px);border-bottom:1px solid rgba(88,166,255,0.12); }
+/* Bloomberg Hybrid */
+body[data-theme="bloomberg"] { --bg:#000000;--surface:#0a0a0a;--text:#f5c518;--accent:#f5c518;--accent2:#00d4aa;--border:#1a1a1a;--card:#0a0a0a;--btn-text:#000; }
+body[data-theme="bloomberg"] .card { background:#0a0a0a;border:1px solid #222;box-shadow:0 2px 8px rgba(245,197,24,0.08); }
+body[data-theme="bloomberg"] .navbar { background:#050505!important;border-bottom:2px solid #f5c518; }
+body[data-theme="bloomberg"] .kpi-value { font-family:'Courier New',monospace; }
+/* Midnight Blue */
+body[data-theme="midnight"]  { --bg:#0a0e27;--surface:#0f1535;--text:#a9b4d0;--accent:#4d9fff;--accent2:#ff6b9d;--border:#1e2a4a;--card:#0f1535;--btn-text:#000; }
+/* Emerald Pro */
+body[data-theme="emerald"]   { --bg:#0a1628;--surface:#0d1f38;--text:#e8f5e9;--accent:#00e676;--accent2:#40c4ff;--border:#1a3048;--card:#0d1f38;--btn-text:#000; }
+
+body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; transition:background .3s,color .3s; }
+.navbar { background:var(--surface)!important; border-bottom:1px solid var(--border); }
+.navbar-brand { color:var(--accent)!important; font-weight:700; }
+.nav-link { color:var(--text)!important; }
+.nav-link:hover { color:var(--accent)!important; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:12px; }
+.card-header { background:transparent; border-bottom:1px solid var(--border); font-weight:600; color:var(--text); }
+.kpi-card { border-left:4px solid var(--accent); transition:.2s; }
+.kpi-card:hover { transform:translateY(-2px); box-shadow:0 4px 20px rgba(0,0,0,.2); }
+.kpi-value { font-size:1.8rem; font-weight:700; color:var(--accent); }
+.kpi-label { font-size:.78rem; opacity:.7; text-transform:uppercase; letter-spacing:.5px; }
+.btn-accent { background:var(--accent); color:var(--btn-text); border:none; font-weight:600; }
+.btn-accent:hover { opacity:.85; color:var(--btn-text); }
+.theme-btn { cursor:pointer; padding:5px 12px; border-radius:20px; border:1px solid var(--border);
+             background:transparent; color:var(--text); font-size:.75rem; margin:2px; transition:.2s; }
+.theme-btn:hover { background:var(--accent); color:var(--btn-text); }
+.theme-btn.active { background:var(--accent); color:var(--btn-text); font-weight:600; }
+.badge-alert { background:#ff6b6b; color:#fff; border-radius:50%; padding:2px 6px; font-size:.7rem; }
+.form-control,.form-select { background:var(--surface); color:var(--text); border-color:var(--border); }
+.form-control:focus,.form-select:focus { background:var(--surface); color:var(--text); border-color:var(--accent); box-shadow:0 0 0 .2rem rgba(0,212,255,.15); }
+.table { color:var(--text); }
+.table-hover tbody tr:hover { background:rgba(128,128,128,.08); }
+.alert-section { border-radius:8px; }
+select option { background:var(--surface); color:var(--text); }
+</style>
+</head>
+<body data-theme="{{ current_theme|default:'dark' }}">
+
+<nav class="navbar navbar-expand-lg">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{% url 'index' %}">
+      <i class="bi bi-graph-up-arrow me-2"></i>Supply Chain AI
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="{% url 'index' %}"><i class="bi bi-house me-1"></i>Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'alerts' %}">
+            <i class="bi bi-bell me-1"></i>Alerts
+            {% if unread_alerts %}<span class="badge-alert">{{ unread_alerts }}</span>{% endif %}
+          </a>
+        </li>
+      </ul>
+      <!-- Theme Switcher -->
+      <div class="d-flex align-items-center gap-1 flex-wrap">
+        <small class="text-muted me-1">Theme:</small>
+        <button class="theme-btn {% if current_theme == 'dark' %}active{% endif %}" onclick="setTheme('dark')"><i class="bi bi-moon-fill me-1"></i>Dark</button>
+        <button class="theme-btn {% if current_theme == 'light' %}active{% endif %}" onclick="setTheme('light')"><i class="bi bi-sun-fill me-1"></i>Light</button>
+        <button class="theme-btn {% if current_theme == 'ai' %}active{% endif %}" onclick="setTheme('ai')"><i class="bi bi-stars me-1"></i>AI</button>
+        <button class="theme-btn {% if current_theme == 'corporate' %}active{% endif %}" onclick="setTheme('corporate')"><i class="bi bi-briefcase-fill me-1"></i>Corporate</button>
+        <button class="theme-btn {% if current_theme == 'neo_glass' %}active{% endif %}" onclick="setTheme('neo_glass')" style="border-color:#58a6ff"><i class="bi bi-hexagon me-1"></i>Neo Glass</button>
+        <button class="theme-btn {% if current_theme == 'bloomberg' %}active{% endif %}" onclick="setTheme('bloomberg')" style="border-color:#f5c518;color:#f5c518"><i class="bi bi-bar-chart-fill me-1"></i>Bloomberg</button>
+        <button class="theme-btn {% if current_theme == 'midnight' %}active{% endif %}" onclick="setTheme('midnight')" style="border-color:#4d9fff"><i class="bi bi-moon-stars me-1"></i>Midnight</button>
+        <button class="theme-btn {% if current_theme == 'emerald' %}active{% endif %}" onclick="setTheme('emerald')" style="border-color:#00e676;color:#00e676"><i class="bi bi-gem me-1"></i>Emerald</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid py-3 px-4">
+{% for m in messages %}
+<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} alert-dismissible fade show" role="alert">
+  {{ m }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% block content %}{% endblock %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<script>
+// Theme switcher — saves to localStorage and reloads with ?theme=
+function setTheme(t) {
+  localStorage.setItem('sc_theme', t);
+  const url = new URL(window.location.href);
+  url.searchParams.set('theme', t);
+  window.location.href = url.toString();
+}
+// On load, if no theme in URL but saved in localStorage, apply it
+(function(){
+  const url = new URL(window.location.href);
+  if (!url.searchParams.get('theme')) {
+    const saved = localStorage.getItem('sc_theme');
+    if (saved) {
+      url.searchParams.set('theme', saved);
+      window.location.replace(url.toString());
+    }
+  }
+})();
+function getCsrf() {
+  const c = document.cookie.split(';').find(x => x.trim().startsWith('csrftoken='));
+  return c ? c.split('=')[1] : '';
+}
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

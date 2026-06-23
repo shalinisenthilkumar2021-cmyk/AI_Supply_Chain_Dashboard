@@ -1,0 +1,40 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Alerts — Supply Chain AI{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-3">
+  <div class="col-lg-10">
+    <div class="card shadow">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-bell-fill text-warning"></i>
+        <h5 class="mb-0">Recent Alerts</h5>
+      </div>
+      <div class="card-body p-0">
+        {% if alerts %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr><th>Type</th><th>Column</th><th>Message</th><th>Time</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+            {% for a in alerts %}
+            <tr>
+              <td><span class="badge bg-{% if a.alert_type == 'anomaly' %}warning text-dark{% elif a.alert_type == 'forecast' %}info text-dark{% else %}secondary{% endif %}">{{ a.alert_type }}</span></td>
+              <td>{{ a.column|default:"-" }}</td>
+              <td>{{ a.message }}</td>
+              <td class="text-muted small">{{ a.created_at|date:"M d H:i" }}</td>
+              <td>{% if a.is_read %}<span class="text-muted small">Read</span>{% else %}<span class="text-warning small">New</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="p-4 text-center text-muted">
+          <i class="bi bi-bell-slash fs-2 mb-2 d-block"></i>No alerts yet.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Upload Dataset — Supply Chain AI{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-4">
+  <div class="col-lg-7">
+
+    <div class="card shadow mb-4">
+      <div class="card-header py-3">
+        <h4 class="mb-0"><i class="bi bi-cloud-upload me-2" style="color:var(--accent)"></i>Upload Dataset</h4>
+      </div>
+      <div class="card-body p-4">
+        <form method="post" action="{% url 'upload_dataset' %}" enctype="multipart/form-data" id="uploadForm">
+          {% csrf_token %}
+
+          <!-- File Type Selector -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Select File Type</label>
+            <div class="d-flex gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="file_type_hint" id="typeCSV" value="csv" checked>
+                <label class="form-check-label" for="typeCSV">
+                  <i class="bi bi-filetype-csv me-1 text-success"></i>CSV
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="file_type_hint" id="typeExcel" value="excel">
+                <label class="form-check-label" for="typeExcel">
+                  <i class="bi bi-filetype-xlsx me-1 text-primary"></i>Excel
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="file_type_hint" id="typePDF" value="pdf">
+                <label class="form-check-label" for="typePDF">
+                  <i class="bi bi-filetype-pdf me-1 text-danger"></i>PDF
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dataset Name -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Dataset Name <small class="text-muted">(optional)</small></label>
+            <input type="text" name="name" class="form-control" placeholder="e.g. Sales Q1 2024">
+          </div>
+
+          <!-- File Upload -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Choose File</label>
+            <input type="file" name="file" id="fileInput" class="form-control" accept=".csv,.xlsx,.xls,.pdf" required>
+            <div class="form-text" id="fileHint">Accepted: .csv, .xlsx, .xls, .pdf — Max 50MB</div>
+          </div>
+
+          <!-- Upload Progress -->
+          <div id="uploadProgress" class="mb-3 d-none">
+            <div class="progress" style="height:6px;">
+              <div class="progress-bar progress-bar-striped progress-bar-animated"
+                   style="width:100%;background:var(--accent)"></div>
+            </div>
+            <small class="text-muted mt-1 d-block">Processing file…</small>
+          </div>
+
+          <button type="submit" class="btn btn-accent w-100 py-2" id="uploadBtn">
+            <i class="bi bi-upload me-2"></i>Upload & Analyse
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Recent Datasets -->
+    {% if datasets %}
+    <div class="card shadow">
+      <div class="card-header"><i class="bi bi-database me-2"></i>Recent Datasets</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Name</th><th>Type</th><th>Rows</th><th>Cols</th><th>Uploaded</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for ds in datasets %}
+            <tr>
+              <td>{{ ds.name }}</td>
+              <td>
+                <span class="badge {% if ds.file_type == 'csv' %}bg-success{% elif ds.file_type == 'pdf' %}bg-danger{% else %}bg-primary{% endif %}">
+                  {{ ds.file_type|upper }}
+                </span>
+              </td>
+              <td>{{ ds.row_count }}</td>
+              <td>{{ ds.col_count }}</td>
+              <td class="text-muted small">{{ ds.uploaded_at|date:"M d, H:i" }}</td>
+              <td>
+                <a href="{% url 'load_dataset' ds.pk %}" class="btn btn-sm btn-outline-info">
+                  <i class="bi bi-arrow-right-circle"></i> Load
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<script>
+// File type radio → update accept attribute
+const radios = document.querySelectorAll('input[name="file_type_hint"]');
+const fileInput = document.getElementById('fileInput');
+const fileHint = document.getElementById('fileHint');
+const acceptMap = {
+  csv: { accept: '.csv', hint: 'Accepted: .csv files' },
+  excel: { accept: '.xlsx,.xls', hint: 'Accepted: .xlsx, .xls files' },
+  pdf: { accept: '.pdf', hint: 'Accepted: .pdf files' },
+};
+radios.forEach(r => {
+  r.addEventListener('change', () => {
+    const m = acceptMap[r.value];
+    fileInput.accept = m.accept;
+    fileHint.textContent = m.hint;
+    fileInput.value = '';
+  });
+});
+// Show progress on submit
+document.getElementById('uploadForm').addEventListener('submit', () => {
+  document.getElementById('uploadProgress').classList.remove('d-none');
+  document.getElementById('uploadBtn').disabled = true;
+  document.getElementById('uploadBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing…';
+});
+</script>
+{% endblock %}

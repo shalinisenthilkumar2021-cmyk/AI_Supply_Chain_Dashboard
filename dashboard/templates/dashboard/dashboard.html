@@ -1,0 +1,451 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Dashboard — Supply Chain AI{% endblock %}
+{% block content %}
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+  {% if kpis.total_revenue %}
+  <div class="col-6 col-xl-2">
+    <div class="card kpi-card p-3">
+      <div class="kpi-label"><i class="bi bi-currency-dollar me-1"></i>Revenue</div>
+      <div class="kpi-value">{{ kpis.total_revenue|floatformat:0 }}</div>
+    </div>
+  </div>
+  {% endif %}
+  {% if kpis.total_profit %}
+  <div class="col-6 col-xl-2">
+    <div class="card kpi-card p-3" style="border-color:var(--accent2)">
+      <div class="kpi-label"><i class="bi bi-graph-up me-1"></i>Profit</div>
+      <div class="kpi-value" style="color:var(--accent2)">{{ kpis.total_profit|floatformat:0 }}</div>
+    </div>
+  </div>
+  {% endif %}
+  {% if kpis.profit_margin_pct %}
+  <div class="col-6 col-xl-2">
+    <div class="card kpi-card p-3" style="border-color:#ffd93d">
+      <div class="kpi-label"><i class="bi bi-percent me-1"></i>Margin</div>
+      <div class="kpi-value" style="color:#ffd93d">{{ kpis.profit_margin_pct }}%</div>
+    </div>
+  </div>
+  {% endif %}
+  <div class="col-6 col-xl-2">
+    <div class="card kpi-card p-3" style="border-color:#6bcb77">
+      <div class="kpi-label"><i class="bi bi-table me-1"></i>Records</div>
+      <div class="kpi-value" style="color:#6bcb77">{{ summary.rows }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-2">
+    <div class="card kpi-card p-3" style="border-color:#c77dff">
+      <div class="kpi-label"><i class="bi bi-columns me-1"></i>Columns</div>
+      <div class="kpi-value" style="color:#c77dff">{{ summary.cols }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-2">
+    <div class="card kpi-card p-3" style="border-color:#ff9f43">
+      <div class="kpi-label"><i class="bi bi-exclamation-circle me-1"></i>Missing</div>
+      <div class="kpi-value" style="color:#ff9f43">{{ summary.missing_values }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- ── Left Panel ── -->
+  <div class="col-lg-4 col-xl-3">
+
+    <!-- Chart Builder -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-bar-chart-line me-2"></i>Chart Builder</div>
+      <div class="card-body">
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Chart Type</label>
+          <select id="chartType" class="form-select form-select-sm">
+            <option value="bar">📊 Bar Chart</option>
+            <option value="line">📈 Line Chart</option>
+            <option value="column">📉 Column Chart</option>
+            <option value="pie">🥧 Pie Chart</option>
+            <option value="donut">🍩 Donut Chart</option>
+            <option value="stacked_bar">📦 Stacked Bar</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">X Column</label>
+          <select id="xColumn" class="form-select form-select-sm">
+            {% for col in columns %}<option value="{{ col }}">{{ col }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Y Column(s) <small class="text-muted">Ctrl+click multi</small></label>
+          <select id="yColumns" class="form-select form-select-sm" multiple size="4">
+            {% for col in numeric_cols %}<option value="{{ col }}" {% if forloop.first %}selected{% endif %}>{{ col }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Chart Theme</label>
+          <select id="chartTheme" class="form-select form-select-sm">
+            <option value="dark" {% if current_theme == 'dark' %}selected{% endif %}>🌙 Dark</option>
+            <option value="light" {% if current_theme == 'light' %}selected{% endif %}>☀️ Light</option>
+            <option value="ai" {% if current_theme == 'ai' %}selected{% endif %}>🤖 AI</option>
+            <option value="corporate" {% if current_theme == 'corporate' %}selected{% endif %}>💼 Corporate</option>
+            <option value="neo_glass" {% if current_theme == 'neo_glass' %}selected{% endif %}>🔷 Neo Glass</option>
+            <option value="bloomberg" {% if current_theme == 'bloomberg' %}selected{% endif %}>📊 Bloomberg</option>
+            <option value="midnight" {% if current_theme == 'midnight' %}selected{% endif %}>🌃 Midnight</option>
+            <option value="emerald" {% if current_theme == 'emerald' %}selected{% endif %}>💎 Emerald</option>
+          </select>
+        </div>
+        <button onclick="buildChart()" class="btn btn-accent w-100">
+          <i class="bi bi-magic me-1"></i>Generate Chart
+        </button>
+        <div id="chartError" class="alert alert-danger mt-2 d-none small py-2"></div>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-download me-2"></i>Export Report</div>
+      <div class="card-body d-flex flex-column gap-2">
+        <a href="{% url 'export_report' 'csv' %}" class="btn btn-outline-success btn-sm"><i class="bi bi-filetype-csv me-1"></i>Export as CSV</a>
+        <a href="{% url 'export_report' 'excel' %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-filetype-xlsx me-1"></i>Export as Excel</a>
+        <a href="{% url 'export_report' 'pdf' %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-filetype-pdf me-1"></i>Export as PDF</a>
+      </div>
+    </div>
+
+    <!-- Dataset Info -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-info-circle me-2"></i>Dataset Info</div>
+      <div class="card-body small">
+        {% if dataset %}<p class="mb-1"><strong>Name:</strong> {{ dataset.name }}</p>{% endif %}
+        <p class="mb-1"><strong>Rows:</strong> {{ summary.rows }}</p>
+        <p class="mb-1"><strong>Columns:</strong> {{ summary.cols }}</p>
+        <p class="mb-1"><strong>Numeric:</strong> {{ summary.numeric_cols|length }}</p>
+        <p class="mb-0"><strong>Categorical:</strong> {{ summary.categorical_cols|length }}</p>
+      </div>
+    </div>
+
+    <!-- Data Quality Score -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-shield-check me-2"></i>Data Quality Score
+        <button onclick="loadQuality()" class="btn btn-sm btn-accent float-end py-0 px-2" style="font-size:.72rem">Refresh</button>
+      </div>
+      <div class="card-body" id="qualityPanel">
+        <div class="text-center text-muted small py-2"><i class="bi bi-shield-check fs-2 d-block mb-1" style="color:var(--accent);opacity:.3"></i>Click Refresh</div>
+      </div>
+    </div>
+
+    <!-- AI Recommendations -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-stars me-2"></i>AI Recommendations
+        <button onclick="loadRecommendations()" class="btn btn-sm btn-accent float-end py-0 px-2" style="font-size:.72rem">Analyse</button>
+      </div>
+      <div class="card-body" id="recsPanel">
+        <div class="text-center text-muted small py-2"><i class="bi bi-stars fs-2 d-block mb-1" style="color:var(--accent);opacity:.3"></i>Click Analyse</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Main Panel ── -->
+  <div class="col-lg-8 col-xl-9">
+
+    <!-- Chart Output -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-graph-up me-2"></i>Chart Output</span>
+        <span id="chartSpinner" class="spinner-border spinner-border-sm d-none" style="color:var(--accent)"></span>
+      </div>
+      <div class="card-body p-2">
+        <div id="chartContainer" style="min-height:380px;display:flex;align-items:center;justify-content:center;">
+          <div class="text-muted text-center">
+            <i class="bi bi-bar-chart-line fs-1 d-block mb-2" style="color:var(--accent);opacity:.3"></i>
+            Select columns and click <strong>Generate Chart</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Low Stock Alert -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-exclamation-triangle-fill me-2" style="color:#ff6b6b"></i>Low Stock Alert System</span>
+        <div class="d-flex align-items-center gap-2">
+          <label class="small text-muted mb-0">Threshold %</label>
+          <input type="number" id="stockThreshold" class="form-control form-control-sm" value="15" min="1" max="50" style="width:70px">
+          <button onclick="loadLowStock()" class="btn btn-sm btn-accent">Scan</button>
+        </div>
+      </div>
+      <div class="card-body" id="lowStockPanel">
+        <div class="text-center text-muted small py-3"><i class="bi bi-box-seam fs-1 d-block mb-2" style="color:var(--accent);opacity:.3"></i>Click Scan to detect low stock items</div>
+      </div>
+    </div>
+
+    <!-- Reorder Point Prediction -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-arrow-repeat me-2" style="color:#6bcb77"></i>Reorder Point Prediction</span>
+        <button onclick="loadReorderPoints()" class="btn btn-sm btn-accent">Calculate</button>
+      </div>
+      <div class="card-body" id="reorderPanel">
+        <div class="text-center text-muted small py-3"><i class="bi bi-arrow-repeat fs-1 d-block mb-2" style="color:var(--accent);opacity:.3"></i>Click Calculate to compute reorder points</div>
+      </div>
+    </div>
+
+    <!-- Supplier Performance Dashboard -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-building me-2" style="color:#c77dff"></i>Supplier Performance Dashboard</span>
+        <button onclick="loadSuppliers()" class="btn btn-sm btn-accent">Load</button>
+      </div>
+      <div class="card-body" id="supplierPanel">
+        <div class="text-center text-muted small py-3"><i class="bi bi-building fs-1 d-block mb-2" style="color:var(--accent);opacity:.3"></i>Click Load to analyse supplier performance</div>
+      </div>
+      <div id="supplierChartContainer" style="min-height:0"></div>
+    </div>
+
+    <!-- Anomaly Detection -->
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-radar me-2"></i>Z-Score & IQR Anomaly Detection</div>
+      <div class="card-body">
+        <div class="row g-2 mb-3">
+          <div class="col-sm-3">
+            <label class="form-label small fw-semibold">Method</label>
+            <select id="anomalyMethod" class="form-select form-select-sm">
+              <option value="zscore">Z-Score (3σ)</option>
+              <option value="iqr">IQR (1.5×)</option>
+            </select>
+          </div>
+          <div class="col-sm-2">
+            <label class="form-label small fw-semibold">Theme</label>
+            <select id="anomalyTheme" class="form-select form-select-sm">
+              <option value="dark" {% if current_theme == 'dark' %}selected{% endif %}>Dark</option>
+              <option value="light" {% if current_theme == 'light' %}selected{% endif %}>Light</option>
+              <option value="ai" {% if current_theme == 'ai' %}selected{% endif %}>AI</option>
+              <option value="corporate" {% if current_theme == 'corporate' %}selected{% endif %}>Corporate</option>
+              <option value="neo_glass" {% if current_theme == 'neo_glass' %}selected{% endif %}>Neo Glass</option>
+              <option value="bloomberg" {% if current_theme == 'bloomberg' %}selected{% endif %}>Bloomberg</option>
+              <option value="midnight" {% if current_theme == 'midnight' %}selected{% endif %}>Midnight</option>
+              <option value="emerald" {% if current_theme == 'emerald' %}selected{% endif %}>Emerald</option>
+            </select>
+          </div>
+          <div class="col-sm-3 d-flex align-items-center gap-2 pt-3">
+            <input type="checkbox" class="form-check-input" id="sendEmail">
+            <label class="form-check-label small" for="sendEmail">Email Alert</label>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label small fw-semibold">Email</label>
+            <input type="email" id="emailTo" class="form-control form-control-sm" placeholder="alert@example.com">
+          </div>
+          <div class="col-sm-1">
+            <button onclick="runAnomalies()" class="btn btn-accent btn-sm w-100" title="Detect Anomalies"><i class="bi bi-search"></i></button>
+          </div>
+        </div>
+        <div id="anomalySummary" class="mb-2"></div>
+        <div id="anomalyCharts"></div>
+      </div>
+    </div>
+
+    <!-- Data Preview -->
+    <div class="card">
+      <div class="card-header"><i class="bi bi-table me-2"></i>Data Preview (first 10 rows)</div>
+      <div class="card-body p-2">
+        <div class="table-responsive" style="font-size:.82rem;">{{ data_preview|safe }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CHART_URL       = "{% url 'build_chart' %}";
+const ANOMALY_URL     = "{% url 'detect_anomalies' %}";
+const LOW_STOCK_URL   = "{% url 'low_stock' %}";
+const REORDER_URL     = "{% url 'reorder_points' %}";
+const SUPPLIER_URL    = "{% url 'supplier_performance' %}";
+const QUALITY_URL     = "{% url 'data_quality' %}";
+const RECS_URL        = "{% url 'ai_recommendations' %}";
+
+// ── Chart Builder ─────────────────────────────────────────────────────────────
+async function buildChart() {
+  const type   = document.getElementById('chartType').value;
+  const xCol   = document.getElementById('xColumn').value;
+  const yOpts  = document.getElementById('yColumns').selectedOptions;
+  const yCols  = Array.from(yOpts).map(o => o.value);
+  const theme  = document.getElementById('chartTheme').value;
+  const errEl  = document.getElementById('chartError');
+  const spinner= document.getElementById('chartSpinner');
+  const container = document.getElementById('chartContainer');
+  errEl.classList.add('d-none');
+  if (!xCol || yCols.length === 0) { errEl.textContent='Select X and Y columns.'; errEl.classList.remove('d-none'); return; }
+  spinner.classList.remove('d-none');
+  container.innerHTML = '<div class="text-center py-5"><div class="spinner-border" style="color:var(--accent)"></div><p class="mt-2 text-muted">Building chart…</p></div>';
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', getCsrf());
+  fd.append('chart_type', type); fd.append('x_column', xCol);
+  yCols.forEach(c => fd.append('y_columns', c)); fd.append('theme', theme);
+  try {
+    const res = await fetch(CHART_URL, { method:'POST', body:fd });
+    const j   = await res.json();
+    if (j.error) { container.innerHTML=''; errEl.textContent='⚠ '+j.error; errEl.classList.remove('d-none'); return; }
+    container.innerHTML = '<div id="chartPlot" style="width:100%;min-height:380px;"></div>';
+    Plotly.newPlot('chartPlot', j.chart.data, j.chart.layout, {responsive:true});
+  } catch(e) { container.innerHTML=''; errEl.textContent='Network error: '+e; errEl.classList.remove('d-none'); }
+  finally { spinner.classList.add('d-none'); }
+}
+
+// ── Anomaly Detection ─────────────────────────────────────────────────────────
+async function runAnomalies() {
+  const method = document.getElementById('anomalyMethod').value;
+  const theme  = document.getElementById('anomalyTheme').value;
+  const email  = document.getElementById('sendEmail').checked ? 'on' : '';
+  const emailTo= document.getElementById('emailTo').value;
+  const sumEl  = document.getElementById('anomalySummary');
+  const chartsEl = document.getElementById('anomalyCharts');
+  sumEl.innerHTML = '<div class="d-flex align-items-center gap-2"><div class="spinner-border spinner-border-sm" style="color:var(--accent)"></div><span class="text-muted"> Detecting…</span></div>';
+  chartsEl.innerHTML = '';
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', getCsrf());
+  fd.append('method', method); fd.append('theme', theme);
+  fd.append('send_email', email); fd.append('email_to', emailTo);
+  try {
+    const res = await fetch(ANOMALY_URL, {method:'POST', body:fd});
+    const j   = await res.json();
+    if (j.error) { sumEl.innerHTML='<div class="alert alert-danger small py-2">⚠ '+j.error+'</div>'; return; }
+    const cols = Object.keys(j.anomalies);
+    if (!cols.length) { sumEl.innerHTML='<div class="alert alert-success small py-2"><i class="bi bi-check-circle me-1"></i>No anomalies detected.</div>'; return; }
+    sumEl.innerHTML = '<div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1"></i>Anomalies in <strong>'+cols.length+'</strong> column(s): '+cols.join(', ')+'</div>';
+    cols.forEach(col => {
+      const id = 'ap_'+col.replace(/\W/g,'_');
+      const div = document.createElement('div'); div.id=id; div.style.minHeight='300px'; div.className='mb-3';
+      chartsEl.appendChild(div);
+      if (j.charts[col]) Plotly.newPlot(id, j.charts[col].data, j.charts[col].layout, {responsive:true});
+    });
+  } catch(e) { sumEl.innerHTML='<div class="alert alert-danger small py-2">Network error: '+e+'</div>'; }
+}
+
+// ── Low Stock ─────────────────────────────────────────────────────────────────
+async function loadLowStock() {
+  const threshold = document.getElementById('stockThreshold').value || 15;
+  const panel = document.getElementById('lowStockPanel');
+  panel.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm" style="color:var(--accent)"></div> Scanning…</div>';
+  try {
+    const res = await fetch(LOW_STOCK_URL + '?threshold=' + (threshold/100));
+    const j = await res.json();
+    if (j.error) { panel.innerHTML = '<div class="alert alert-danger small py-2">'+j.error+'</div>'; return; }
+    if (!j.count) {
+      panel.innerHTML = '<div class="alert alert-success small py-2"><i class="bi bi-check-circle me-1"></i>No low stock items found at '+threshold+'% threshold.</div>';
+      return;
+    }
+    let html = `<div class="alert alert-warning small py-2 mb-3"><i class="bi bi-exclamation-triangle-fill me-1"></i><strong>${j.count}</strong> item(s) below ${threshold}% stock level</div>`;
+    html += '<div class="table-responsive"><table class="table table-sm table-hover" style="font-size:.82rem"><thead><tr><th>Item</th><th>Column</th><th>Value</th><th>Threshold</th><th>Stock %</th></tr></thead><tbody>';
+    j.items.forEach(item => {
+      const badge = item.pct < 5 ? 'danger' : item.pct < 10 ? 'warning' : 'info';
+      html += `<tr><td><strong>${item.item}</strong></td><td>${item.column}</td><td>${item.value}</td><td>${item.threshold}</td>
+               <td><span class="badge bg-${badge}">${item.pct}%</span></td></tr>`;
+    });
+    html += '</tbody></table></div>';
+    panel.innerHTML = html;
+  } catch(e) { panel.innerHTML = '<div class="alert alert-danger small py-2">Error: '+e+'</div>'; }
+}
+
+// ── Reorder Points ────────────────────────────────────────────────────────────
+async function loadReorderPoints() {
+  const panel = document.getElementById('reorderPanel');
+  panel.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm" style="color:var(--accent)"></div> Calculating…</div>';
+  try {
+    const res = await fetch(REORDER_URL);
+    const j = await res.json();
+    if (j.error) { panel.innerHTML='<div class="alert alert-danger small py-2">'+j.error+'</div>'; return; }
+    if (!j.count) { panel.innerHTML='<div class="alert alert-info small py-2">No demand column detected. Add a column with "demand", "sales", or "usage" in the name.</div>'; return; }
+    let html = `<div class="alert alert-info small py-2 mb-3"><i class="bi bi-info-circle me-1"></i>Reorder points calculated for <strong>${j.count}</strong> item(s). Formula: ROP = (Avg Demand × Lead Time) + Safety Stock</div>`;
+    html += '<div class="table-responsive"><table class="table table-sm table-hover" style="font-size:.82rem"><thead><tr><th>Item</th><th>Avg Demand</th><th>Lead Time (days)</th><th>Safety Stock</th><th>Reorder Point</th></tr></thead><tbody>';
+    j.points.forEach(p => {
+      html += `<tr><td><strong>${p.item}</strong></td><td>${p.avg_demand}</td><td>${p.lead_time}</td><td>${p.safety_stock}</td>
+               <td><span class="badge bg-primary">${p.reorder_point}</span></td></tr>`;
+    });
+    html += '</tbody></table></div>';
+    panel.innerHTML = html;
+  } catch(e) { panel.innerHTML='<div class="alert alert-danger small py-2">Error: '+e+'</div>'; }
+}
+
+// ── Supplier Performance ──────────────────────────────────────────────────────
+async function loadSuppliers() {
+  const panel = document.getElementById('supplierPanel');
+  const chartEl = document.getElementById('supplierChartContainer');
+  panel.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm" style="color:var(--accent)"></div> Analysing…</div>';
+  chartEl.innerHTML = '';
+  try {
+    const res = await fetch(SUPPLIER_URL + '?theme={{ current_theme }}');
+    const j = await res.json();
+    if (j.error) { panel.innerHTML='<div class="alert alert-danger small py-2">'+j.error+'</div>'; return; }
+    if (!j.count) { panel.innerHTML='<div class="alert alert-info small py-2">No supplier column detected. Add a column with "supplier" or "vendor" in the name.</div>'; return; }
+    let html = `<div class="alert alert-info small py-2 mb-3"><i class="bi bi-building me-1"></i><strong>${j.count}</strong> supplier(s) analysed. Score = weighted avg of delivery, defect, fill rate.</div>`;
+    html += '<div class="table-responsive"><table class="table table-sm table-hover" style="font-size:.82rem"><thead><tr><th>Supplier</th><th>Orders</th><th>Avg Delivery</th><th>Defect Rate</th><th>Fill Rate</th><th>Score</th></tr></thead><tbody>';
+    j.suppliers.forEach(s => {
+      const grade = s.score >= 75 ? 'success' : s.score >= 50 ? 'warning' : 'danger';
+      html += `<tr><td><strong>${s.supplier}</strong></td><td>${s.orders}</td>
+               <td>${s.avg_delivery_days !== undefined ? s.avg_delivery_days+'d' : '—'}</td>
+               <td>${s.avg_defect_rate !== undefined ? s.avg_defect_rate+'%' : '—'}</td>
+               <td>${s.avg_fill_rate !== undefined ? s.avg_fill_rate+'%' : '—'}</td>
+               <td><span class="badge bg-${grade}">${s.score}</span></td></tr>`;
+    });
+    html += '</tbody></table></div>';
+    panel.innerHTML = html;
+    if (j.chart) {
+      chartEl.innerHTML = '<div id="supplierPlot" style="width:100%;"></div>';
+      Plotly.newPlot('supplierPlot', j.chart.data, j.chart.layout, {responsive:true});
+    }
+  } catch(e) { panel.innerHTML='<div class="alert alert-danger small py-2">Error: '+e+'</div>'; }
+}
+
+// ── Data Quality ──────────────────────────────────────────────────────────────
+async function loadQuality() {
+  const panel = document.getElementById('qualityPanel');
+  panel.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm" style="color:var(--accent)"></div></div>';
+  try {
+    const res = await fetch(QUALITY_URL);
+    const j = await res.json();
+    if (j.error) { panel.innerHTML='<div class="small text-danger">'+j.error+'</div>'; return; }
+    const gradeColor = j.grade==='A'?'#6bcb77':j.grade==='B'?'#ffd93d':j.grade==='C'?'#ff9f43':'#ff6b6b';
+    panel.innerHTML = `
+      <div class="text-center mb-2">
+        <div style="font-size:2.5rem;font-weight:700;color:${gradeColor}">${j.score}%</div>
+        <div style="font-size:1.1rem;color:${gradeColor}">Grade ${j.grade}</div>
+      </div>
+      <div class="small">
+        <div class="d-flex justify-content-between mb-1"><span>Completeness</span><strong>${j.completeness}%</strong></div>
+        <div class="progress mb-2" style="height:4px"><div class="progress-bar" style="width:${j.completeness}%;background:var(--accent)"></div></div>
+        <div class="d-flex justify-content-between mb-1"><span>Uniqueness</span><strong>${j.uniqueness}%</strong></div>
+        <div class="progress mb-2" style="height:4px"><div class="progress-bar" style="width:${j.uniqueness}%;background:#6bcb77"></div></div>
+        <div class="d-flex justify-content-between mb-1"><span>Consistency</span><strong>${j.consistency}%</strong></div>
+        <div class="progress mb-2" style="height:4px"><div class="progress-bar" style="width:${j.consistency}%;background:#c77dff"></div></div>
+        <hr style="border-color:var(--border);margin:.5rem 0">
+        <div class="d-flex justify-content-between"><span>Missing cells</span><span class="text-warning">${j.missing_cells}</span></div>
+        <div class="d-flex justify-content-between"><span>Duplicate rows</span><span class="text-warning">${j.duplicate_rows}</span></div>
+      </div>`;
+  } catch(e) { panel.innerHTML='<div class="small text-danger">Error: '+e+'</div>'; }
+}
+
+// ── AI Recommendations ────────────────────────────────────────────────────────
+async function loadRecommendations() {
+  const panel = document.getElementById('recsPanel');
+  panel.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm" style="color:var(--accent)"></div> Analysing…</div>';
+  try {
+    const res = await fetch(RECS_URL);
+    const j = await res.json();
+    if (j.error) { panel.innerHTML='<div class="small text-danger">'+j.error+'</div>'; return; }
+    const colors = {HIGH:'danger', MEDIUM:'warning', LOW:'info'};
+    const icons  = {HIGH:'🔴', MEDIUM:'🟡', LOW:'🔵'};
+    let html = '';
+    j.recommendations.forEach(r => {
+      html += `<div class="mb-2 p-2 rounded" style="background:rgba(128,128,128,.07);border-left:3px solid var(--${colors[r.priority]??'secondary'})">
+        <div class="small fw-semibold">${icons[r.priority]??''} ${r.title}</div>
+        <div class="small text-muted mt-1">${r.detail}</div>
+        <span class="badge bg-${colors[r.priority]??'secondary'} mt-1" style="font-size:.65rem">${r.category}</span>
+      </div>`;
+    });
+    panel.innerHTML = html;
+  } catch(e) { panel.innerHTML='<div class="small text-danger">Error: '+e+'</div>'; }
+}
+</script>
+{% endblock %}
