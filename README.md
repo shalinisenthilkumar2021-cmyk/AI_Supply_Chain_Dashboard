@@ -83,23 +83,24 @@ AI Supply Chain Dashboard is a full-stack Django-based analytics platform design
 
 ---
 
+
 ## 📸 Screenshots
+
+### Home Page
+
+![Home Page](screenshots/homepage.png)
 
 ### Dashboard
 
-(Add Dashboard Screenshot Here)
+![Dashboard](screenshots/dashboard.png)
 
-### KPI Analytics
+### Analytics Charts
 
-(Add KPI Screenshot Here)
+![Charts](screenshots/charts.png)
 
 ### AI Recommendations
 
-(Add AI Recommendation Screenshot Here)
-
-### Supplier Performance
-
-(Add Supplier Performance Screenshot Here)
+![AI Recommendations](screenshots/ai-recommendations.png)
 
 ---
 
