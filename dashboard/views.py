@@ -49,11 +49,14 @@ def _base_ctx(request):
 
 # ── Index ─────────────────────────────────────────────────────────────────────
 
-def index(request):
-    ctx = _base_ctx(request)
-    ctx['datasets'] = UploadedDataset.objects.order_by('-uploaded_at')[:10]
-    return render(request, 'dashboard/index.html', ctx)
+# def index(request):
+#     ctx = _base_ctx(request)
+#     ctx['datasets'] = UploadedDataset.objects.order_by('-uploaded_at')[:10]
+#     return render(request, 'dashboard/index.html', ctx)
 
+
+def index(request):
+    return render(request, 'dashboard/index.html')
 
 # ── Upload ────────────────────────────────────────────────────────────────────
 
